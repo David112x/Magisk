@@ -44,7 +44,6 @@ extern std::vector<module_info> *module_list;
 extern std::string native_bridge;
 
 extern int magisktmpfs_fd;
-extern int su_bin_fd;
 extern bool HAVE_32;
 
 void reset_zygisk(bool restore);
@@ -114,7 +113,3 @@ void update_sulist_config(bool enable);
 // Ptrace
 void proc_monitor();
 extern pthread_t monitor_thread;
-
-// Mount Su
-void enable_mount_su();
-void disable_unmount_su();

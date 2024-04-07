@@ -224,34 +224,27 @@ void revert_unmount(int pid) {
 
     // Unmount dummy skeletons and MAGISKTMP
     // since mirror nodes are always mounted under skeleton, we don't have to specifically unmount
-
-    // magisk tmpfs
     for (auto &info: parse_mount_info("self")) {
-        if (info.source == "magisk")
+        if (info.source == "magisk" || info.source == "worker" || // magisktmp tmpfs
+            info.target.starts_with("/data/adb/modules") || // bind mount inside modules directory
+            info.root.starts_with("/adb/modules")) { // bind mount from data partition
             targets.insert(info.target);
+        }
     }
-    for (auto &s : reversed(targets))
-        lazy_unmount(s.data());
-    targets.clear();
 
-    // tmpfs mount
-    for (auto &info: parse_mount_info("self")) {
-        if (info.source == "worker")
-            targets.insert(info.target);
-    }
-    for (auto &s : reversed(targets))
-        lazy_unmount(s.data());
-    targets.clear();
+    if (targets.empty()) return;
 
-    // module bind mount
-    for (auto &info: parse_mount_info("self")) {
-        if (info.root.starts_with("/adb/modules") ||
-            info.target.starts_with("/data/adb/modules"))
-            targets.insert(info.target);
+    auto last_target = *targets.cbegin() + '/';
+    for (auto iter = next(targets.cbegin()); iter != targets.cend();) {
+        if (iter->starts_with(last_target)) {
+            iter = targets.erase(iter);
+        } else {
+            last_target = *iter++ + '/';
+        }
     }
-    for (auto &s : reversed(targets))
+
+    for (auto &s : targets)
         lazy_unmount(s.data());
-    targets.clear();
 
     // Unmount early-mount.d files
     for (auto &info: parse_mount_info("self")) {
